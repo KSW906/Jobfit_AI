@@ -9,8 +9,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # ================================================================
-    # Claude API 업그레이드 시 아래 주석 해제
-    # .env 파일에 ANTHROPIC_API_KEY=your_key_here 추가 필요
+    # Claude API 및 OpenAI API 업그레이드
     # ================================================================
     # ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-    # ================================================================
+    # OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

@@ -1,0 +1,68 @@
+{
+  "name": "Adzuna → Jobfit AI Flask",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 12 }] }
+      },
+      "id": "schedule-trigger",
+      "name": "스케줄 (12시간마다)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id={{$env.ADZUNA_APP_ID}}&app_key={{$env.ADZUNA_APP_KEY}}&results_per_page=50&what=developer&content-type=application/json",
+        "options": {}
+      },
+      "id": "adzuna-api",
+      "name": "Adzuna API 호출",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.all()[0].json;\nconst jobs = (raw.results || []).map(j => ({ ...j, source: 'adzuna' }));\nreturn [{ json: { jobs } }];"
+      },
+      "id": "transform",
+      "name": "데이터 변환",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:5000/api/jobs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.jobs }}",
+        "options": {}
+      },
+      "id": "flask-save",
+      "name": "Flask에 저장",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.all()[0].json;\nconsole.log(`✅ Adzuna: ${r.saved}개 저장, ${r.skipped}개 스킵`);\nreturn [{ json: r }];"
+      },
+      "id": "log",
+      "name": "결과 로그",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 300]
+    }
+  ],
+  "connections": {
+    "스케줄 (12시간마다)": { "main": [[{ "node": "Adzuna API 호출", "type": "main", "index": 0 }]] },
+    "Adzuna API 호출":      { "main": [[{ "node": "데이터 변환",       "type": "main", "index": 0 }]] },
+    "데이터 변환":          { "main": [[{ "node": "Flask에 저장",      "type": "main", "index": 0 }]] },
+    "Flask에 저장":         { "main": [[{ "node": "결과 로그",         "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["adzuna", "jobfit-ai"]
+}

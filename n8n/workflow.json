@@ -1,25 +1,40 @@
 {
-  "name": "Remotive → Jobfit AI Flask",
+  "name": "Jobfit AI 통합 채용 데이터 수집 워크플로우",
   "nodes": [
     {
       "parameters": {
-        "rule": { "interval": [{ "field": "hours", "hoursInterval": 12 }] }
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
       },
       "id": "schedule-trigger",
       "name": "스케줄 (12시간마다)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [200, 300]
+      "position": [100, 250]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [100, 400]
     },
     {
       "parameters": {
         "jsCode": "const categories = ['software-dev','data','devops-sysadmin','artificial-intelligence'];\nreturn categories.map(cat => ({ json: { category: cat } }));"
       },
-      "id": "category-list",
-      "name": "IT 카테고리 목록",
+      "id": "remotive-category-list",
+      "name": "remotive-category-list",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 300]
+      "position": [320, 200]
     },
     {
       "parameters": {
@@ -27,53 +42,210 @@
         "options": {}
       },
       "id": "remotive-api",
-      "name": "Remotive API 호출",
+      "name": "remotive-api",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [640, 300]
+      "position": [540, 200]
     },
     {
       "parameters": {
         "jsCode": "const raw = $input.all()[0].json;\nconst jobs = (raw.jobs || []).map(j => ({ ...j, source: 'remotive' }));\nreturn [{ json: { jobs } }];"
       },
-      "id": "transform",
-      "name": "데이터 변환",
+      "id": "remotive-transform",
+      "name": "remotive-transform",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [860, 300]
+      "position": [760, 200]
     },
     {
       "parameters": {
-        "url": "http://localhost:5000/api/jobs",
+        "method": "POST",
+        "url": "http://127.0.0.1:5000/api/jobs",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.jobs }}",
         "options": {}
       },
-      "id": "flask-save",
-      "name": "Flask에 저장",
+      "id": "remotive-flask-save",
+      "name": "remotive-flask-save",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1080, 300]
+      "position": [980, 200]
     },
     {
       "parameters": {
-        "jsCode": "const r = $input.all()[0].json;\nconsole.log(`✅ ${r.saved}개 저장, ${r.skipped}개 스킵`);\nreturn [{ json: r }];"
+        "jsCode": "const r = $input.all()[0].json;\nconsole.log(`✅ Remotive: ${r.saved}개 저장, ${r.skipped}개 스킵`);\nreturn [{ json: r }];"
       },
-      "id": "log",
-      "name": "결과 로그",
+      "id": "remotive-log",
+      "name": "remotive-log",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1300, 300]
+      "position": [1200, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=4eb4b091&app_key=5b2e1f49f8ba38ac3018857378000166&results_per_page=50&what=developer&content-type=application/json",
+        "options": {}
+      },
+      "id": "adzuna-api",
+      "name": "adzuna-api",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.all()[0].json;\nconst jobs = (raw.results || []).map(j => ({ ...j, source: 'adzuna' }));\nreturn [{ json: { jobs } }];"
+      },
+      "id": "adzuna-transform",
+      "name": "adzuna-transform",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [540, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5000/api/jobs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.jobs }}",
+        "options": {}
+      },
+      "id": "adzuna-flask-save",
+      "name": "adzuna-flask-save",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.all()[0].json;\nconsole.log(`✅ Adzuna: ${r.saved}개 저장, ${r.skipped}개 스킵`);\nreturn [{ json: r }];"
+      },
+      "id": "adzuna-log",
+      "name": "adzuna-log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 400]
     }
   ],
   "connections": {
-    "스케줄 (12시간마다)": { "main": [[{ "node": "IT 카테고리 목록",   "type": "main", "index": 0 }]] },
-    "IT 카테고리 목록":    { "main": [[{ "node": "Remotive API 호출", "type": "main", "index": 0 }]] },
-    "Remotive API 호출":  { "main": [[{ "node": "데이터 변환",        "type": "main", "index": 0 }]] },
-    "데이터 변환":        { "main": [[{ "node": "Flask에 저장",       "type": "main", "index": 0 }]] },
-    "Flask에 저장":       { "main": [[{ "node": "결과 로그",          "type": "main", "index": 0 }]] }
+    "스케줄 (12시간마다)": {
+      "main": [
+        [
+          {
+            "node": "remotive-category-list",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "adzuna-api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "remotive-category-list",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "adzuna-api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remotive-category-list": {
+      "main": [
+        [
+          {
+            "node": "remotive-api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remotive-api": {
+      "main": [
+        [
+          {
+            "node": "remotive-transform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remotive-transform": {
+      "main": [
+        [
+          {
+            "node": "remotive-flask-save",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remotive-flask-save": {
+      "main": [
+        [
+          {
+            "node": "remotive-log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "adzuna-api": {
+      "main": [
+        [
+          {
+            "node": "adzuna-transform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "adzuna-transform": {
+      "main": [
+        [
+          {
+            "node": "adzuna-flask-save",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "adzuna-flask-save": {
+      "main": [
+        [
+          {
+            "node": "adzuna-log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" },
-  "tags": ["remotive", "jobfit-ai"]
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    "remotive",
+    "adzuna",
+    "jobfit-ai"
+  ]
 }

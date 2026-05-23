@@ -45,3 +45,24 @@ def normalize(raw: dict) -> dict | None:
         "category":        category,
         "source":          "remotive",
     }
+
+
+def fetch_raw_remotive(limit: int = 50) -> list:
+    """
+    Remotive API를 직접 호출하여 IT 카테고리의 raw 채용 공고 목록을 가져옵니다.
+    """
+    import requests
+    categories = ["software-dev", "data", "devops-sysadmin", "artificial-intelligence"]
+    jobs = []
+    for cat in categories:
+        url = f"https://remotive.com/api/remote-jobs?category={cat}&limit={limit}"
+        try:
+            res = requests.get(url, timeout=10)
+            if res.status_code == 200:
+                raw_data = res.json()
+                for j in raw_data.get("jobs", []):
+                    j["source"] = "remotive"
+                    jobs.append(j)
+        except Exception as e:
+            print(f"[Sync] Remotive fetch error for {cat}: {e}")
+    return jobs

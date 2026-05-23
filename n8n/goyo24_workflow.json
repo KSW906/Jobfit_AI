@@ -1,0 +1,79 @@
+{
+  "name": "고용24 → Jobfit AI Flask",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 12 }] }
+      },
+      "id": "schedule-trigger",
+      "name": "스케줄 (12시간마다)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// IT 직종 키워드 목록\nconst keywords = ['백엔드개발자', '프론트엔드개발자', '풀스택개발자', '데이터엔지니어', '머신러닝엔지니어'];\nreturn keywords.map(kw => ({ json: { keyword: kw } }));"
+      },
+      "id": "keyword-list",
+      "name": "IT 키워드 목록",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://www.work24.go.kr/cm/openapi/call/wk/FileDown.do?authKey={{$env.GOYO24_API_KEY}}&callTp=L&returnType=XML&startPage=1&display=50&keyword={{$json.keyword}}&sort=DATE",
+        "options": {}
+      },
+      "id": "goyo24-api",
+      "name": "고용24 API 호출",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// XML 파싱 (n8n 내장 XML 파서 활용)\nconst xml = $input.all()[0].json.data || $input.all()[0].json;\nconst xmlStr = typeof xml === 'string' ? xml : JSON.stringify(xml);\n\n// 간단한 XML → JSON 변환\nfunction parseXmlField(xmlStr, tag) {\n  const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'gs');\n  const matches = [];\n  let m;\n  while ((m = regex.exec(xmlStr)) !== null) {\n    matches.push(m[1].trim());\n  }\n  return matches;\n}\n\nconst wantedAuthNos = parseXmlField(xmlStr, 'wantedAuthNo');\nconst corps        = parseXmlField(xmlStr, 'corp');\nconst titles       = parseXmlField(xmlStr, 'wantedTitle');\nconst regions      = parseXmlField(xmlStr, 'region1Nm');\nconst empTps       = parseXmlField(xmlStr, 'empTpNm');\nconst sals         = parseXmlField(xmlStr, 'sal');\nconst salTps       = parseXmlField(xmlStr, 'salTpNm');\nconst regDts       = parseXmlField(xmlStr, 'regDt');\nconst closeDts     = parseXmlField(xmlStr, 'closeDt');\nconst jobsNms      = parseXmlField(xmlStr, 'jobsNm');\nconst minEdus      = parseXmlField(xmlStr, 'minEdubgNm');\nconst careers      = parseXmlField(xmlStr, 'career');\nconst urls         = parseXmlField(xmlStr, 'wantedInfoUrl');\n\nconst jobs = wantedAuthNos.map((id, i) => ({\n  wantedAuthNo: id,\n  corp:         corps[i]    || '',\n  wantedTitle:  titles[i]   || '',\n  region1Nm:    regions[i]  || '',\n  empTpNm:      empTps[i]   || '',\n  sal:          sals[i]     || '',\n  salTpNm:      salTps[i]   || '',\n  regDt:        regDts[i]   || '',\n  closeDt:      closeDts[i] || '',\n  jobsNm:       jobsNms[i]  || '',\n  minEdubgNm:   minEdus[i]  || '',\n  career:       careers[i]  || '',\n  wantedInfoUrl: urls[i]    || '',\n  source:       'goyo24',\n}));\n\nreturn [{ json: { jobs } }];\n"
+      },
+      "id": "parse-xml",
+      "name": "XML 파싱",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:5000/api/jobs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.jobs }}",
+        "options": {}
+      },
+      "id": "flask-save",
+      "name": "Flask에 저장",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.all()[0].json;\nconsole.log(`✅ 고용24: ${r.saved}개 저장, ${r.skipped}개 스킵`);\nreturn [{ json: r }];"
+      },
+      "id": "log",
+      "name": "결과 로그",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 300]
+    }
+  ],
+  "connections": {
+    "스케줄 (12시간마다)": { "main": [[{ "node": "IT 키워드 목록",   "type": "main", "index": 0 }]] },
+    "IT 키워드 목록":       { "main": [[{ "node": "고용24 API 호출", "type": "main", "index": 0 }]] },
+    "고용24 API 호출":      { "main": [[{ "node": "XML 파싱",        "type": "main", "index": 0 }]] },
+    "XML 파싱":             { "main": [[{ "node": "Flask에 저장",    "type": "main", "index": 0 }]] },
+    "Flask에 저장":         { "main": [[{ "node": "결과 로그",       "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["goyo24", "jobfit-ai"]
+}
