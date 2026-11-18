@@ -1,0 +1,7 @@
+Flask==3.1.0
+flask-cors==5.0.1
+requests==2.33.1
+flask-sqlalchemy
+python-dotenv
+pypdf
+anthropic

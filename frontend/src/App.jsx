@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import InputPage from './pages/InputPage'
 import ResultPage from './pages/ResultPage'
 import AuthPage from './pages/AuthPage'
+import ChatbotWidget from './components/ChatbotWidget'
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('auth_token'))
@@ -27,7 +28,6 @@ export default function App() {
             setUser(data.user)
             setToken(storedToken)
           } else {
-            // 무효한 토큰 처리
             localStorage.removeItem('auth_token')
             setToken(null)
             setUser(null)
@@ -67,7 +67,7 @@ export default function App() {
     setError(null)
   }
 
-  const handleAnalyze = async (skills, limit, preferences, priorities, resume) => {
+  const handleAnalyze = async (skills, limit, preferences, priorities, resume, feedbackMode) => {
     setLoading(true)
     setError(null)
     setResult(null)
@@ -86,7 +86,8 @@ export default function App() {
           limit,
           preferences,
           priorities,
-          resume
+          resume,
+          feedback_mode: feedbackMode
         }),
       })
 
@@ -97,6 +98,55 @@ export default function App() {
 
       const data = await res.json()
       setResult(data)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 🕒 과거 분석 이력 상세 로드 및 Result 구조 매핑 복원 함수
+  const handleLoadHistory = async (historyId) => {
+    setLoading(true)
+    setError(null)
+    const currentToken = localStorage.getItem('auth_token')
+
+    try {
+      const res = await fetch(`/api/analyze/history/${historyId}`, {
+        headers: { 
+          'Authorization': `Bearer ${currentToken}` 
+        }
+      })
+
+      if (!res.ok) throw new Error('이전 분석 기록을 로드하지 못했습니다.')
+      const data = await res.json()
+
+      // 보관된 스냅샷 규격을 현재 대시보드 구조에 맞춰 강제 매핑 및 데이터 부활
+      setResult({
+        results: data.top_matches.map(m => ({
+          job: {
+            title: m.job_title,
+            company: m.company,
+            location: m.location,
+            salary: m.salary,
+            employment_type: "보관된 기록",
+            apply_url: null
+          },
+          fit_score: m.fit_score,
+          matched_skills: m.matched_skills || [],
+          missing_skills: [],
+          feedback: ["이전 보관 리포트 요약본입니다. 전체 상세 피드백은 실시간 분석 결과 탭을 활용해 주세요."],
+          match_details: { skills: m.fit_score, job_title: 100, category: 100, salary: 100, location: 100 }
+        })),
+        summary: {
+          total_jobs: data.total_jobs,
+          analyzed_jobs: data.analyzed_jobs,
+          avg_fit_score: data.avg_fit_score
+        },
+        learning_priority: data.skills_snapshot.map(s => ({ skill: s, demand_count: 1 })),
+        resume_used: false
+      })
+
     } catch (e) {
       setError(e.message)
     } finally {
@@ -131,7 +181,6 @@ export default function App() {
 
   return (
     <>
-      {/* 글로벌 사용자 인증 헤더 */}
       <header style={{
         position: 'absolute',
         top: 20,
@@ -165,10 +214,21 @@ export default function App() {
         </button>
       </header>
 
+      {loading && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(10,10,15,0.8)', zIndex: 999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b8b0ff',
+          fontSize: '16px', fontWeight: 'bold'
+        }}>
+          데이터 처리 및 매칭 엔진 구동 중...
+        </div>
+      )}
+
       {!result
-        ? <InputPage onAnalyze={handleAnalyze} loading={loading} error={error} />
-        : <ResultPage result={result} onReset={handleReset} />
+        ? <InputPage onAnalyze={handleAnalyze} onLoadHistory={handleLoadHistory} loading={loading} error={error} />
+        : <ResultPage result={result} onReset={handleReset} onLoadHistory={handleLoadHistory} />
       }
+      {token && <ChatbotWidget />}
     </>
   )
 }

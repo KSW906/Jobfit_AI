@@ -1,0 +1,1272 @@
+.page {
+  min-height: 100vh;
+  padding: 2rem 1rem 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.blob1 {
+  position: fixed;
+  top: -150px; left: -150px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(124,106,247,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.blob2 {
+  position: fixed;
+  bottom: -150px; right: -150px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(247,106,138,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  animation: fadeUp 0.5s ease both;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.backBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  font-size: 13px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.backBtn:hover { color: var(--text); border-color: var(--accent); }
+
+.title {
+  font-family: var(--font-head);
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-right: auto;
+}
+
+.sub {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* 요약 */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 600px) {
+  .summaryGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.summaryCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.scoreRing { position: relative; width: 70px; height: 70px; }
+.ringsvg { width: 70px; height: 70px; transform: rotate(-90deg); }
+.ringBg {
+  fill: none;
+  stroke: rgba(255,255,255,0.06);
+  stroke-width: 6;
+}
+.ringFill {
+  fill: none;
+  stroke: url(#grad);
+  stroke: #7c6af7;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.8s ease;
+}
+.scoreNum {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 14px;
+  color: #b8b0ff;
+}
+.scoreLabel { font-size: 11px; color: var(--muted); }
+
+.statNum {
+  font-family: var(--font-body);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+.statLabel { font-size: 11px; color: var(--muted); }
+
+.topJobCard { align-items: flex-start; text-align: left; }
+.topJobScore {
+  font-family: var(--font-body);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4ade80;
+}
+.topJobTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+.topJobCo { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* 탭 */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+.tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-family: var(--font-head);
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--text); }
+.tabActive { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tabContent { display: flex; flex-direction: column; gap: 12px; }
+
+/* 채용공고 카드 */
+.jobCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  transition: border-color 0.2s;
+}
+.jobCard:hover { border-color: rgba(124,106,247,0.3); }
+
+.jobTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 10px;
+}
+.jobTitle {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.jobCo { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+.scoreBadge {
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid;
+  letter-spacing: 0.02em;
+}
+.scoreHigh { color: #4ade80; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.scoreMid  { color: #fbbf24; border-color: rgba(251,191,36,0.3);  background: rgba(251,191,36,0.08); }
+.scoreLow  { color: var(--muted); border-color: var(--border); background: transparent; }
+
+.barWrap {
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.bar {
+  height: 100%;
+  background: linear-gradient(90deg, #7c6af7, #f76a8a);
+  border-radius: 2px;
+  transition: width 0.8s ease;
+}
+
+.skillRow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.skillMatch {
+  font-size: 11px;
+  background: rgba(74,222,128,0.1);
+  color: #4ade80;
+  border: 1px solid rgba(74,222,128,0.25);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.skillMiss {
+  font-size: 11px;
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.skillMore {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 2px 6px;
+}
+
+.jobMeta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+.applyLink {
+  margin-left: auto;
+  color: #9b8fff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+}
+.applyLink:hover { color: #b8b0ff; }
+
+/* 피드백 카드 */
+.feedCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.feedJobTitle {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  word-break: break-all;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+}
+
+.missingSkills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.missingTag {
+  font-size: 11px;
+  background: rgba(247, 106, 138, 0.08);
+  color: #f7a0b0;
+  border: 1px solid rgba(247, 106, 138, 0.2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+.feedHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.feedTitle {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+}
+.feedScore {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.gapSection { display: flex; flex-direction: column; gap: 8px; }
+.gapLabel { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.gapSkills { display: flex; flex-wrap: wrap; gap: 6px; }
+.gapSkill {
+  font-size: 12px;
+  background: rgba(247,106,138,0.1);
+  color: #f7a0b0;
+  border: 1px solid rgba(247,106,138,0.25);
+  border-radius: 6px;
+  padding: 3px 10px;
+}
+.feedList { display: flex; flex-direction: column; gap: 8px; }
+.feedItem {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.feedDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+/* 학습 우선순위 고도화 스타일 */
+.priorityDesc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.prioList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 0.5rem;
+}
+
+.priorityCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+
+.priorityCard:hover {
+  border-color: rgba(124, 106, 247, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(124, 106, 247, 0.15);
+}
+
+.priorityHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.priorityRankBadge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.rankFirst {
+  background: linear-gradient(135deg, #ffd700, #ffa500);
+  color: #1e1e2d;
+  font-size: 18px;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+.rankSecond {
+  background: linear-gradient(135deg, #e0e0e0, #a0a0a0);
+  color: #1e1e2d;
+  font-size: 18px;
+  box-shadow: 0 0 10px rgba(224, 224, 224, 0.2);
+}
+
+.rankThird {
+  background: linear-gradient(135deg, #cd7f32, #8b4513);
+  color: #fff;
+  font-size: 18px;
+  box-shadow: 0 0 10px rgba(205, 127, 50, 0.2);
+}
+
+.rankNormal {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.priorityTitleWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+}
+
+.priorityNameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.prioritySkillName {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.priorityMarketDemand {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.priorityMarketDemand strong {
+  color: #b8b0ff;
+  font-weight: 700;
+}
+
+.priorityLevelBadgeWrap {
+  margin-left: auto;
+}
+
+.prioLevelBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.prioLevelHot {
+  background: rgba(247, 106, 138, 0.08);
+  border-color: rgba(247, 106, 138, 0.25);
+  color: #f7a0b0;
+  box-shadow: 0 0 10px rgba(247, 106, 138, 0.1);
+}
+
+.prioLevelWarm {
+  background: rgba(124, 106, 247, 0.08);
+  border-color: rgba(124, 106, 247, 0.25);
+  color: #b8b0ff;
+}
+
+.prioLevelNormal {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.priorityProgressBarWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.priorityProgressBarLabel {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.priorityProgressBar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.priorityProgressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c6af7 0%, #4ade80 100%);
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+.priorityFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.priorityGuideText {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+}
+
+.prioSearchLink {
+  color: #9b8fff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.prioSearchLink:hover {
+  color: #b8b0ff;
+  text-decoration: underline;
+}
+
+
+/* 추가 매칭 가중치 세부항목 스타일 */
+.matchDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.detailTag {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: var(--font-body);
+}
+
+/* 분석 이력 스타일 */
+.loadingHistory, .emptyHistory {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.historyCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.25s ease;
+  margin-bottom: 12px;
+}
+
+.historyCard:hover {
+  border-color: rgba(124, 106, 247, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.historyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 8px;
+}
+
+.historyTime {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.historyScore {
+  font-size: 14px;
+  color: #b8b0ff;
+}
+
+.historyScore strong {
+  color: #4ade80;
+  font-size: 16px;
+}
+
+.historyStats {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.historySnapshot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.snapshotLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.snapshotTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.snapshotTag {
+  font-size: 11px;
+  background: rgba(124, 106, 247, 0.08);
+  color: #b8b0ff;
+  border: 1px solid rgba(124, 106, 247, 0.2);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.snapshotPrefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.snapshotPrefs span {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.historyTopMatches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.topMatchesList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.topMatchItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text);
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.topMatchName {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80%;
+}
+
+.topMatchScore {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.feedCardResume {
+  border: 1px solid rgba(247, 106, 138, 0.25) !important;
+  background: linear-gradient(135deg, rgba(30, 30, 45, 0.45) 0%, rgba(247, 106, 138, 0.04) 100%) !important;
+  box-shadow: 0 8px 32px 0 rgba(247, 106, 138, 0.05);
+}
+
+.feedTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resumeCoachBadge {
+  font-size: 10px;
+  background: linear-gradient(135deg, rgba(247, 106, 138, 0.2) 0%, rgba(124, 106, 247, 0.2) 100%);
+  color: #f7a0b0;
+  border: 1px solid rgba(247, 106, 138, 0.3);
+  border-radius: 100px;
+  padding: 2px 10px;
+  width: fit-content;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  animation: pulseResume 2s infinite ease-in-out;
+}
+
+@keyframes pulseResume {
+  0%, 100% {
+    opacity: 0.9;
+    box-shadow: 0 0 4px rgba(247, 106, 138, 0.2);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(247, 106, 138, 0.4);
+  }
+}
+/* ─── 이력서 비교 탭 ─── */
+
+.compSelectWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.compSelectLabel {
+  font-size: 13px;
+  color: #9090a8;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.compCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.compCard {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.compCard:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.compCardActive {
+  background: rgba(139, 92, 246, 0.12) !important;
+  border-color: rgba(139, 92, 246, 0.6) !important;
+}
+
+.compCardLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e0e0f0;
+  margin-bottom: 4px;
+}
+
+.compCardName {
+  font-size: 12px;
+  color: #7070a0;
+  margin-bottom: 10px;
+}
+
+.compCardSkills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.compSkillTag {
+  background: rgba(139, 92, 246, 0.2);
+  color: #c4b5fd;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 11px;
+}
+
+.compSkillMore {
+  font-size: 11px;
+  color: #7070a0;
+  padding: 2px 4px;
+}
+
+.compCardPreview {
+  font-size: 12px;
+  color: #6060808;
+  color: #606080;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.compareBtn {
+  align-self: flex-start;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.compareBtn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.compareBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.compareError {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #fca5a5;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 14px;
+}
+
+.compareResultWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.compareResultTitle {
+  font-size: 16px;
+  color: #c4b5fd;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.compareAssessment {
+  background: rgba(139, 92, 246, 0.1);
+  border-left: 3px solid #7c3aed;
+  border-radius: 0 10px 10px 0;
+  padding: 14px 18px;
+  font-size: 14px;
+  color: #d4c8ff;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.compareGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .compareGrid { grid-template-columns: 1fr; }
+}
+
+.compareSection {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.compareSectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  letter-spacing: 0.03em;
+}
+
+.strengthTitle  { color: #6ee7b7; }
+.weaknessTitle  { color: #fcd34d; }
+.gapTitle       { color: #f87171; }
+.adviceTitle    { color: #93c5fd; }
+
+.compareList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compareListItem {
+  font-size: 13px;
+  color: #b0b0c8;
+  line-height: 1.55;
+  padding-left: 14px;
+  position: relative;
+}
+
+.compareListItem::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #6060a0;
+}
+
+.skillGapTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.skillGapTag {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.adviceList {
+  padding-left: 18px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.adviceItem {
+  font-size: 13px;
+  color: #b0b0c8;
+  line-height: 1.6;
+}
+
+/* 추천 학습 자원 스타일 */
+.resourceSection {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.resourceSecTitle {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px 0;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.resourceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .resourceGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resourceCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.resourceCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  transition: transform 0.2s;
+  transform: scaleY(0.7);
+}
+
+.resourceCard:hover::before {
+  transform: scaleY(1);
+}
+
+/* Youtube 전용 */
+.resYoutube::before {
+  background: #ef4444;
+}
+.resYoutube:hover {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.1);
+}
+
+/* 교육강좌 전용 */
+.resCourse::before {
+  background: #10b981;
+}
+.resCourse:hover {
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);
+}
+
+/* 공식문서 전용 */
+.resDoc::before {
+  background: #3b82f6;
+}
+.resDoc:hover {
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+}
+
+.resIcon {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.resInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.resTypeName {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.resYoutube .resTypeName {
+  color: #fca5a5;
+}
+.resCourse .resTypeName {
+  color: #a7f3d0;
+}
+.resDoc .resTypeName {
+  color: #bfdbfe;
+}
+
+.resName {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resArrow {
+  font-size: 11px;
+  color: var(--muted);
+  transition: transform 0.2s, color 0.2s;
+}
+
+.resourceCard:hover .resArrow {
+  color: var(--text);
+  transform: translate(2px, -2px);
+}
+
+/* ─── 앙상블 탭 ─── */
+
+.ensembleSelect {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ensembleScoreRow {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.ensembleScoreBig {
+  text-align: center;
+}
+
+.ensembleScoreNum {
+  font-size: 52px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #c4b5fd, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+
+.ensembleScoreLabel {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 6px;
+}
+
+.ensembleModelScores {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ensembleModelItem {
+  display: grid;
+  grid-template-columns: 70px 44px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.ensembleModelName {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.ensembleModelScore {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-align: right;
+}
+
+.ensembleModelBar {
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ensembleModelBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.ensembleDisagreement {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fcd34d;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.ensembleGapGroup {
+  margin-bottom: 14px;
+}
+
+.ensembleGapLabel {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.skillGapMedium {
+  background: rgba(251, 191, 36, 0.12) !important;
+  color: #fcd34d !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+.skillGapMatched {
+  background: rgba(110, 231, 183, 0.12) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(110, 231, 183, 0.3) !important;
+}
+
+.ensembleRawGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.ensembleRawCard {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.ensembleRawTitle {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.ensembleRawSection {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 8px 0 5px;
+}
+
+.ensembleRawItem {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  padding-left: 10px;
+  border-left: 2px solid rgba(255,255,255,0.07);
+  margin-bottom: 5px;
+}
+
+.ensembleMeta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  text-align: right;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}

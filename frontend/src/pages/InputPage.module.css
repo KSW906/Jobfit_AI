@@ -639,3 +639,195 @@
   }
 }
 
+/* PDF Upload styles */
+.fileUploadArea {
+  width: 100%;
+}
+
+.uploadLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 120px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px dashed rgba(247, 106, 138, 0.3);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.uploadLabel:hover {
+  background: rgba(247, 106, 138, 0.06);
+  border-color: rgba(247, 106, 138, 0.6);
+}
+
+.uploadLabelDisabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  border-color: var(--border);
+}
+
+.uploadLabelDisabled:hover {
+  background: transparent;
+  border-color: var(--border);
+}
+
+.uploadPrompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.uploadIcon {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+
+.uploadText {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.uploadSubtext {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.uploadingSpinnerWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.resumePreviewWrap {
+  margin-top: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.resumePreviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border);
+}
+
+.resumePreviewTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.resumeClearBtn {
+  background: rgba(247, 106, 138, 0.15);
+  border: 1px solid rgba(247, 106, 138, 0.3);
+  color: #f7a0b0;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.resumeClearBtn:hover:not(:disabled) {
+  background: rgba(247, 106, 138, 0.3);
+  border-color: rgba(247, 106, 138, 0.6);
+  color: #fff;
+}
+
+.resumeClearBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.resumePreviewContent {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--text);
+  max-height: 150px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  background: rgba(0, 0, 0, 0.15);
+  text-align: left;
+}
+
+/* Suggested skills styles from resume */
+.suggestedSkillsWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 1rem;
+  background: rgba(46, 213, 115, 0.04);
+  border: 1px solid rgba(46, 213, 115, 0.15);
+  border-radius: 12px;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.suggestedSkillsTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2ed573;
+}
+
+.suggestedSkillsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.suggestedSkillBadge {
+  background: rgba(46, 213, 115, 0.1);
+  border: 1px solid rgba(46, 213, 115, 0.25);
+  color: #5deb8c;
+  border-radius: 8px;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-body);
+}
+
+.suggestedSkillBadge:hover {
+  background: rgba(46, 213, 115, 0.25);
+  border-color: #2ed573;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.clearAllBtn {
+  background: rgba(247, 106, 138, 0.1);
+  border: 1px solid rgba(247, 106, 138, 0.25);
+  color: #f7a0b0;
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s ease;
+}
+
+.clearAllBtn:hover {
+  background: rgba(247, 106, 138, 0.25);
+  border-color: rgba(247, 106, 138, 0.5);
+  color: #fff;
+}
+
+

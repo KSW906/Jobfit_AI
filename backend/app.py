@@ -6,6 +6,10 @@ from routes.jobs import jobs_bp
 from routes.analyze import analyze_bp
 from routes.profile import profile_bp
 from routes.auth import auth_bp
+from routes.comparison import comparison_bp
+from routes.chatbot import chatbot_bp
+from routes.bookmarks import bookmarks_bp
+from routes.insights import insights_bp
 
 
 def create_app():
@@ -23,11 +27,22 @@ def create_app():
     app.register_blueprint(analyze_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(comparison_bp)
+    app.register_blueprint(chatbot_bp)
+    app.register_blueprint(bookmarks_bp)
+    app.register_blueprint(insights_bp)
 
     # DB 테이블 생성
     with app.app_context():
         db.create_all()
         print("[DB] Table creation completed")
+        try:
+            db.session.execute(db.text("ALTER TABLE interview_practice_sessions ADD COLUMN interview_mode VARCHAR(50) DEFAULT 'diagnostic'"))
+            db.session.commit()
+            print("[DB] Migrated: Added interview_mode column to interview_practice_sessions")
+        except Exception:
+            # Column already exists or error executing
+            pass
 
     return app
 

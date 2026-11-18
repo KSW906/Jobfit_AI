@@ -7,10 +7,11 @@ const SUGGESTED_SKILLS = [
   'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Kubernetes', 'Go', 'Rust',
 ]
 
-export default function InputPage({ onAnalyze, loading, error }) {
+export default function InputPage({ onAnalyze, onLoadHistory, loading, error }) {
   const [skills, setSkills]   = useState([])
   const [input, setInput]     = useState('')
   const [limit, setLimit]     = useState(5)
+  const [feedbackMode, setFeedbackMode] = useState('hybrid')
 
   // 선호 조건 및 우선순위(가중치) 상태 추가
   const [showPreferences, setShowPreferences] = useState(false)
@@ -28,10 +29,16 @@ export default function InputPage({ onAnalyze, loading, error }) {
   // 이력서 상태 추가
   const [showResume, setShowResume]           = useState(false)
   const [resume, setResume]                   = useState('')
+  const [uploadingPdf, setUploadingPdf]       = useState(false)
+  const [suggestedSkills, setSuggestedSkills] = useState([])
 
   const [stats, setStats] = useState({ remotive: 0, adzuna: 0, total: 0 })
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState(null)
+
+  // 🕒 메인 창 전용 이력 관리 상태 추가
+  const [historyList, setHistoryList] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   const fetchStats = () => {
     fetch('/api/jobs/stats')
@@ -43,14 +50,14 @@ export default function InputPage({ onAnalyze, loading, error }) {
       .catch(err => console.error('Failed to load stats:', err))
   }
 
-  // 컴포넌트 마운트 시 사용자 프로필 로드
+  // 컴포넌트 마운트 시 사용자 프로필 및 과거 이력 싹 긁어오기
   useEffect(() => {
     fetchStats()
     const token = localStorage.getItem('auth_token')
+    
+    // 1. 사용자 데이터 자동 바인딩
     fetch('/api/profile', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => {
         if (!res.ok) throw new Error('프로필 로드 실패')
@@ -87,6 +94,19 @@ export default function InputPage({ onAnalyze, loading, error }) {
         }
       })
       .catch(err => console.error('Failed to load profile:', err))
+
+    // 2. 🕒 메인 입력 창 렌더링 시 과거 분석 기록 연동
+    setHistoryLoading(true)
+    fetch('/api/analyze/history', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('이력 로드 실패')
+        return res.json()
+      })
+      .then(data => setHistoryList(data || []))
+      .catch(err => console.error('Failed to load histories:', err))
+      .finally(() => setHistoryLoading(false))
   }, [])
 
   const addSkill = (skill) => {
@@ -109,6 +129,81 @@ export default function InputPage({ onAnalyze, loading, error }) {
     }
   }
 
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.type !== 'application/pdf') {
+      alert('PDF 파일만 업로드할 수 있습니다.')
+      return
+    }
+    
+    setUploadingPdf(true)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const token = localStorage.getItem('auth_token')
+      const res = await fetch('/api/profile/upload-resume', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+      
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.error || 'PDF 업로드 실패')
+      }
+      
+      const data = await res.json()
+      setResume(data.resume)
+      if (data.extracted_skills) {
+        setSuggestedSkills(data.extracted_skills)
+      }
+      alert('이력서 PDF 분석 및 텍스트 추출이 완료되었습니다!')
+    } catch (err) {
+      console.error(err)
+      alert(`오류: ${err.message}`)
+    } finally {
+      setUploadingPdf(false)
+    }
+  }
+
+  const handleClearResume = async () => {
+    if (!confirm('업로드된 이력서 데이터를 삭제하시겠습니까?')) return
+    setResume('')
+    try {
+      const token = localStorage.getItem('auth_token')
+      await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          skills,
+          resume: '',
+          preferences: {
+            job_title: prefTitle,
+            category: prefCategory,
+            salary: prefSalary ? Number(prefSalary) : null,
+            location: prefLocation
+          },
+          priorities: {
+            skills: wSkills,
+            job_title: prefTitle ? wTitle : 0,
+            category: prefCategory ? wCategory : 0,
+            salary: prefSalary ? wSalary : 0,
+            location: prefLocation ? wLocation : 0
+          }
+        })
+      })
+    } catch (err) {
+      console.error('이력서 삭제 저장 실패:', err)
+    }
+  }
+
   const handleSubmit = async () => {
     if (skills.length === 0) return
     
@@ -127,7 +222,6 @@ export default function InputPage({ onAnalyze, loading, error }) {
       location: prefLocation ? wLocation : 0
     }
 
-    // 서버에 프로필 영구 저장
     try {
       const token = localStorage.getItem('auth_token')
       await fetch('/api/profile', {
@@ -147,7 +241,7 @@ export default function InputPage({ onAnalyze, loading, error }) {
       console.error('Failed to save profile:', err)
     }
 
-    onAnalyze(skills, limit, preferences, priorities, resume)
+    onAnalyze(skills, limit, preferences, priorities, resume, feedbackMode)
   }
 
   const handleSync = async () => {
@@ -157,9 +251,7 @@ export default function InputPage({ onAnalyze, loading, error }) {
       const token = localStorage.getItem('auth_token')
       const res = await fetch('/api/jobs/sync', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('동기화 실패')
       const data = await res.json()
@@ -176,7 +268,6 @@ export default function InputPage({ onAnalyze, loading, error }) {
 
   return (
     <div className={styles.page}>
-      {/* 배경 장식 */}
       <div className={styles.blob1} />
       <div className={styles.blob2} />
 
@@ -197,9 +288,19 @@ export default function InputPage({ onAnalyze, loading, error }) {
 
         {/* 스킬 입력 카드 */}
         <div className={styles.card}>
-          <label className={styles.label}>보유 스킬 입력</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label className={styles.label} style={{ marginBottom: 0 }}>보유 스킬 입력</label>
+            {skills.length > 0 && (
+              <button
+                type="button"
+                className={styles.clearAllBtn}
+                onClick={() => setSkills([])}
+              >
+                🗑️ 전체 비우기
+              </button>
+            )}
+          </div>
 
-          {/* 태그 입력창 */}
           <div className={styles.tagInput}>
             {skills.map(s => (
               <span key={s} className={styles.tag}>
@@ -216,7 +317,6 @@ export default function InputPage({ onAnalyze, loading, error }) {
             />
           </div>
 
-          {/* 추천 스킬 */}
           <div className={styles.suggestWrap}>
             <span className={styles.suggestLabel}>빠른 선택</span>
             <div className={styles.suggests}>
@@ -230,7 +330,6 @@ export default function InputPage({ onAnalyze, loading, error }) {
             </div>
           </div>
 
-          {/* 분석 수 */}
           <div className={styles.limitRow}>
             <label className={styles.limitLabel}>비교할 채용공고 수</label>
             <div className={styles.limitBtns}>
@@ -246,7 +345,27 @@ export default function InputPage({ onAnalyze, loading, error }) {
             </div>
           </div>
 
-          {/* 선호 조건 및 가중치 토글 버튼 */}
+          <div className={styles.limitRow}>
+            <label className={styles.limitLabel}>AI 피드백 일관성 모드</label>
+            <div className={styles.limitBtns} style={{ gap: '6px' }}>
+              {[
+                { label: '실시간 새로 작성 (AI Fresh)', val: 'fresh' },
+                { label: '지능형 혼합 캐시 (Hybrid)', val: 'hybrid' },
+                { label: '저장된 캐시만 재사용 (Cached)', val: 'cached' }
+              ].map(m => (
+                <button
+                  key={m.val}
+                  type="button"
+                  className={`${styles.limitBtn} ${feedbackMode === m.val ? styles.limitActive : ''}`}
+                  onClick={() => setFeedbackMode(m.val)}
+                  style={{ fontSize: '11px', padding: '6px 10px', height: 'auto', whiteSpace: 'nowrap' }}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button
             type="button"
             className={styles.prefToggleBtn}
@@ -255,10 +374,8 @@ export default function InputPage({ onAnalyze, loading, error }) {
             {showPreferences ? '⚡ 선호 조건 접기' : '⚙️ 선호 조건 및 우선순위 설정 (선택)'}
           </button>
 
-          {/* 선호 조건 패널 */}
           {showPreferences && (
             <div className={styles.preferencesPanel}>
-              {/* 스킬 가중치 */}
               <div className={styles.prefGroup}>
                 <div className={styles.prefLabelRow}>
                   <label className={styles.prefLabel}>보유 스킬 중요도</label>
@@ -281,7 +398,6 @@ export default function InputPage({ onAnalyze, loading, error }) {
                 </div>
               </div>
 
-              {/* 선호 직무 */}
               <div className={styles.prefGroup}>
                 <div className={styles.prefLabelRow}>
                   <label className={styles.prefLabel}>희망 직무명</label>
@@ -311,7 +427,6 @@ export default function InputPage({ onAnalyze, loading, error }) {
                 />
               </div>
 
-              {/* 선호 분야 */}
               <div className={styles.prefGroup}>
                 <div className={styles.prefLabelRow}>
                   <label className={styles.prefLabel}>희망 직무 분야</label>
@@ -341,7 +456,6 @@ export default function InputPage({ onAnalyze, loading, error }) {
                 />
               </div>
 
-              {/* 희망 연봉 */}
               <div className={styles.prefGroup}>
                 <div className={styles.prefLabelRow}>
                   <label className={styles.prefLabel}>최소 희망 연봉 (숫자만)</label>
@@ -372,7 +486,6 @@ export default function InputPage({ onAnalyze, loading, error }) {
                 />
               </div>
 
-              {/* 희망 근무지 */}
               <div className={styles.prefGroup}>
                 <div className={styles.prefLabelRow}>
                   <label className={styles.prefLabel}>희망 근무 위치</label>
@@ -404,7 +517,6 @@ export default function InputPage({ onAnalyze, loading, error }) {
             </div>
           )}
 
-          {/* 이력서 입력 토글 버튼 */}
           <button
             type="button"
             className={styles.resumeToggleBtn}
@@ -413,27 +525,84 @@ export default function InputPage({ onAnalyze, loading, error }) {
             {showResume ? '⚡ 이력서 입력 접기' : '📝 이력서 정보 입력 (선택 - Claude AI 1:1 맞춤 피드백)'}
           </button>
 
-          {/* 이력서 입력 패널 */}
           {showResume && (
             <div className={styles.resumePanel}>
-              <label className={styles.prefLabel}>내 이력서 (텍스트)</label>
+              <label className={styles.prefLabel}>내 이력서 (PDF 업로드)</label>
               <p className={styles.resumeDesc}>
-                이력서의 프로젝트 경험이나 주요 경력 내용을 자유롭게 입력해 주세요. Claude AI가 분석하여 부족한 스킬에 대한 1:1 맞춤형 피드백을 제공합니다.
+                이력서 PDF 파일을 업로드해 주세요. AI가 PDF에서 텍스트를 자동으로 추출하여 분석에 반영하고 맞춤 피드백을 제공합니다.
               </p>
-              <textarea
-                className={styles.resumeTextarea}
-                value={resume}
-                onChange={e => setResume(e.target.value)}
-                placeholder="예: React와 Node.js 기반 웹 프로젝트 개발을 주로 수행했습니다. AWS EC2와 S3를 배포에 사용하였으며, Docker나 CI/CD 도입 경험은 없어서 기술 보완을 원합니다."
-                rows={6}
-              />
+              <div className={styles.fileUploadArea}>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  id="pdf-upload"
+                  className={styles.fileInput}
+                  onChange={handlePdfUpload}
+                  style={{ display: 'none' }}
+                  disabled={uploadingPdf}
+                />
+                <label htmlFor="pdf-upload" className={`${styles.uploadLabel} ${uploadingPdf ? styles.uploadLabelDisabled : ''}`}>
+                  {uploadingPdf ? (
+                    <div className={styles.uploadingSpinnerWrap}>
+                      <span className={styles.spinner} />
+                      <span>PDF 분석 및 텍스트 추출 중...</span>
+                    </div>
+                  ) : (
+                    <div className={styles.uploadPrompt}>
+                      <span className={styles.uploadIcon}>📁</span>
+                      <span className={styles.uploadText}>클릭하여 PDF 이력서 업로드</span>
+                      <span className={styles.uploadSubtext}>PDF 파일만 지원합니다 (최대 5MB)</span>
+                    </div>
+                  )}
+                </label>
+              </div>
+              
+              {/* 추천 스킬 영역 */}
+              {suggestedSkills && suggestedSkills.filter(s =>
+                !skills.map(x => x.toLowerCase()).includes(s.toLowerCase())
+              ).length > 0 && (
+                <div className={styles.suggestedSkillsWrap}>
+                  <span className={styles.suggestedSkillsTitle}>💡 이력서 분석 기술 추천 (클릭하여 추가):</span>
+                  <div className={styles.suggestedSkillsList}>
+                    {suggestedSkills.filter(s =>
+                      !skills.map(x => x.toLowerCase()).includes(s.toLowerCase())
+                    ).map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        className={styles.suggestedSkillBadge}
+                        onClick={() => addSkill(s)}
+                      >
+                        + {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {resume && (
+                <div className={styles.resumePreviewWrap}>
+                  <div className={styles.resumePreviewHeader}>
+                    <span className={styles.resumePreviewTitle}>📝 추출된 이력서 텍스트 미리보기</span>
+                    <button
+                      type="button"
+                      className={styles.resumeClearBtn}
+                      onClick={handleClearResume}
+                      disabled={uploadingPdf}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                  <div className={styles.resumePreviewContent}>
+                    {resume}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* 에러 */}
           {error && <div className={styles.error}>⚠ {error}</div>}
 
-          {/* 분석 버튼 */}
           <button
             className={styles.analyzeBtn}
             onClick={handleSubmit}
@@ -447,6 +616,63 @@ export default function InputPage({ onAnalyze, loading, error }) {
               `${skills.length > 0 ? skills.length + '개 스킬' : ''} 분석 시작 →`
             )}
           </button>
+        </div>
+
+        {/* 🕒 ✨ [신규 배치] 메인 화면 전용 과거 매칭 분석 이력 보드 */}
+        <div className={styles.syncCard} style={{ marginTop: '2rem', borderColor: 'rgba(124, 106, 247, 0.2)' }}>
+          <div className={styles.syncHeader}>
+            <span style={{ fontSize: '1.5rem' }}>📜</span>
+            <div className={styles.syncTitleWrap}>
+              <h3 className={styles.syncTitle}>최근 분석 이력 불러오기</h3>
+              <p className={styles.syncDesc}>이전에 보관해 둔 매칭 결과 리포트를 클릭 한 번으로 메인 대시보드에 즉시 복원합니다.</p>
+            </div>
+          </div>
+
+          {historyLoading ? (
+            <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '13px', padding: '10px' }}>보관된 기록을 확인 중입니다...</div>
+          ) : historyList.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '13px', padding: '10px' }}>아직 저장된 과거 분석 리포트가 없습니다.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto', paddingRight: '4px' }}>
+              {historyList.slice(0, 5).map((h) => (
+                <div
+                  key={h.id}
+                  onClick={() => onLoadHistory && onLoadHistory(h.id)}
+                  style={{
+                    padding: '12px 16px',
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    transition: '0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(124, 106, 247, 0.08)'
+                    e.currentTarget.style.borderColor = 'var(--accent)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
+                    e.currentTarget.style.borderColor = 'var(--border)'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)' }}>
+                      🎯 가중치 종합 적합도: <span style={{ color: '#4ade80' }}>{h.avg_fit_score}%</span>
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                      스킬 세트: {h.skills_snapshot || '없음'}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                    {new Date(h.run_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 채용 데이터 동기화 대시보드 */}

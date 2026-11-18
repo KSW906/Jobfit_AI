@@ -14,7 +14,6 @@ class User(db.Model):
     token         = db.Column(db.String(100), unique=True, nullable=True)
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # 1-to-1 관계 설정 (UserProfile)
     profile       = db.relationship("UserProfile", backref="user", uselist=False, cascade="all, delete-orphan")
 
     def to_dict(self):
@@ -37,18 +36,13 @@ class JobPosting(db.Model):
     location        = db.Column(db.String(200))
     employment_type = db.Column(db.String(50))
     salary          = db.Column(db.String(100))
-    description     = db.Column(db.Text)         # 원본 HTML JD
-    tags            = db.Column(db.Text)          # Remotive tags (콤마 구분)
-    skills          = db.Column(db.Text)          # 추출된 스킬 (콤마 구분)
+    description     = db.Column(db.Text)
+    tags            = db.Column(db.Text)
+    skills          = db.Column(db.Text)
     apply_url       = db.Column(db.String(500))
     posted_at       = db.Column(db.String(50))
     category        = db.Column(db.String(100))
-
-    # ================================================================
-    # source 필드: API 출처 구분 (remotive / goyo24 / adzuna 등)
-    # ================================================================
     source          = db.Column(db.String(50), default="remotive")
-
     fetched_at      = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -89,29 +83,19 @@ class SkillStat(db.Model):
 
 
 class UserProfile(db.Model):
-    """
-    사용자 프로필 테이블
-    - 보유 스킬, 선호 조건, 가중치를 영구 저장
-    - 단일 사용자 기준 (id=1) 기본 지원
-    """
+    """사용자 프로필 테이블"""
     __tablename__ = "user_profiles"
 
     id              = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
     name            = db.Column(db.String(100), default="기본 사용자")
-
-    # 보유 스킬 (콤마 구분 문자열)
     skills          = db.Column(db.Text, default="")
-
-    # 이력서 (텍스트)
     resume          = db.Column(db.Text, default="")
 
-    # 선호 조건
     pref_job_title  = db.Column(db.String(200), default="")
     pref_category   = db.Column(db.String(200), default="")
     pref_salary     = db.Column(db.Float, nullable=True)
     pref_location   = db.Column(db.String(200), default="")
 
-    # 가중치 (0 ~ 5)
     w_skills        = db.Column(db.Integer, default=3)
     w_title         = db.Column(db.Integer, default=1)
     w_category      = db.Column(db.Integer, default=1)
@@ -120,9 +104,12 @@ class UserProfile(db.Model):
 
     updated_at      = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # 매칭 이력과 1:N 관계
-    match_histories = db.relationship("MatchHistory", backref="user", lazy=True,
-                                      cascade="all, delete-orphan")
+    match_histories = db.relationship("MatchHistory", backref="user", lazy=True, cascade="all, delete-orphan")
+    resumes         = db.relationship("UserResume", backref="profile", lazy=True, cascade="all, delete-orphan")
+    feedbacks       = db.relationship("ResumeFeedback", backref="profile", lazy=True, cascade="all, delete-orphan")
+    
+    # 🆕 1:N 관계 - 타인/경쟁자 비교 이력서 보관함 추가
+    comp_resumes    = db.relationship("ComparisonResume", backref="profile", lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -148,28 +135,17 @@ class UserProfile(db.Model):
 
 
 class MatchHistory(db.Model):
-    """
-    매칭 실행 이력 테이블
-    - 분석 실행마다 결과 요약 저장
-    - UserProfile 과 FK 연결
-    """
+    """매칭 실행 이력 테이블"""
     __tablename__ = "match_histories"
 
-    id              = db.Column(db.Integer, primary_key=True)
-    user_id         = db.Column(db.Integer, db.ForeignKey("user_profiles.id"), nullable=True)
-
-    run_at          = db.Column(db.DateTime, default=datetime.utcnow)
-    avg_fit_score   = db.Column(db.Integer, default=0)
-    total_jobs      = db.Column(db.Integer, default=0)
-    analyzed_jobs   = db.Column(db.Integer, default=0)
-
-    # 사용된 스킬 스냅샷
-    skills_snapshot = db.Column(db.Text, default="")
-
-    # 선호 조건 스냅샷 (JSON)
+    id               = db.Column(db.Integer, primary_key=True)
+    user_id          = db.Column(db.Integer, db.ForeignKey("user_profiles.id"), nullable=True)
+    run_at           = db.Column(db.DateTime, default=datetime.utcnow)
+    avg_fit_score    = db.Column(db.Integer, default=0)
+    total_jobs       = db.Column(db.Integer, default=0)
+    analyzed_jobs    = db.Column(db.Integer, default=0)
+    skills_snapshot  = db.Column(db.Text, default="")
     preferences_snapshot = db.Column(db.Text, default="{}")
-
-    # 상위 N개 결과 요약 (JSON 배열)
     top_matches     = db.Column(db.Text, default="[]")
 
     def to_dict(self):
@@ -177,10 +153,249 @@ class MatchHistory(db.Model):
             "id":             self.id,
             "user_id":        self.user_id,
             "run_at":         self.run_at.isoformat() if self.run_at else None,
+            "run_at_date":    self.run_at.strftime('%Y-%m-%d') if self.run_at else None,
+            "run_at_time":    self.run_at.strftime('%H:%M:%S') if self.run_at else None,
             "avg_fit_score":  self.avg_fit_score,
             "total_jobs":     self.total_jobs,
             "analyzed_jobs":  self.analyzed_jobs,
             "skills_snapshot": self.skills_snapshot.split(",") if self.skills_snapshot else [],
             "preferences_snapshot": json.loads(self.preferences_snapshot or "{}"),
             "top_matches":    json.loads(self.top_matches or "[]"),
+        }
+
+
+class UserResume(db.Model):
+    """사용자의 다중 이력서 관리 테이블 (1안)"""
+    __tablename__ = "user_resumes"
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey("user_profiles.id"), nullable=False)
+    title      = db.Column(db.String(150), default="나의 이력서")
+    content    = db.Column(db.Text, nullable=False)
+    is_main    = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id":         self.id,
+            "user_id":    self.user_id,
+            "title":      self.title,
+            "content":    self.content,
+            "is_main":    self.is_main,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class ResumeFeedback(db.Model):
+    """AI 이력서 피드백 및 첨삭 결과 테이블 (2안)"""
+    __tablename__ = "resume_feedbacks"
+
+    id           = db.Column(db.Integer, primary_key=True)
+    user_id      = db.Column(db.Integer, db.ForeignKey("user_profiles.id"), nullable=False)
+    resume_hint  = db.Column(db.String(100))
+    ai_advice    = db.Column(db.Text, nullable=False)
+    strengths    = db.Column(db.Text, default="")
+    weaknesses   = db.Column(db.Text, default="")
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id":           self.id,
+            "user_id":      self.user_id,
+            "resume_hint":  self.resume_hint,
+            "ai_advice":    self.ai_advice,
+            "strengths":    self.strengths.split(",") if self.strengths else [],
+            "weaknesses":   self.weaknesses.split(",") if self.weaknesses else [],
+            "created_at":   self.created_at.isoformat() if self.created_at else None
+        }
+
+
+# 🆕 타인/합격자 이력서 보관용 신규 테이블 추가
+class ComparisonResume(db.Model):
+    """비교용 경쟁자 또는 합격자 이력서 테이블"""
+    __tablename__ = "comparison_resumes"
+
+    id          = db.Column(db.Integer, primary_key=True)
+    user_id     = db.Column(db.Integer, db.ForeignKey("user_profiles.id"), nullable=False)
+    
+    label       = db.Column(db.String(100), nullable=False)  # 예: "네이버 합격자 이력서", "상위 10% 개발자 표본"
+    target_name = db.Column(db.String(50), default="익명 구직자")
+    content     = db.Column(db.Text, nullable=False)         # 비교 대상의 이력서 본문 줄글
+    skills      = db.Column(db.Text, default="")            # 해당 이력서에서 추출한 스킬셋 (콤마 구분)
+    
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id":          self.id,
+            "user_id":     self.user_id,
+            "label":       self.label,
+            "target_name": self.target_name,
+            "content":     self.content,
+            "skills":      self.skills.split(",") if self.skills else [],
+            "created_at":  self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class Bookmark(db.Model):
+    """사용자가 저장한 관심 채용 공고 테이블"""
+    __tablename__ = "bookmarks"
+
+    id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    job_posting_id = db.Column(db.Integer, db.ForeignKey("job_postings.id"), nullable=False, index=True)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
+    job = db.relationship("JobPosting")
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "job_posting_id", name="uq_user_job_bookmark"),
+    )
+
+    def to_dict(self):
+        data = {
+            "id":             self.id,
+            "user_id":        self.user_id,
+            "job_posting_id": self.job_posting_id,
+            "created_at":     self.created_at.isoformat() if self.created_at else None,
+        }
+        if self.job:
+            data["job"] = self.job.to_dict()
+        return data
+
+
+class CachedFeedback(db.Model):
+    """기술 스택별 AI 피드백 캐시 테이블"""
+    __tablename__ = "cached_feedbacks"
+
+    id         = db.Column(db.Integer, primary_key=True)
+    skill_name = db.Column(db.String(100), unique=True, nullable=False)
+    feedback   = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "skill_name": self.skill_name,
+            "feedback": self.feedback,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class InterviewPracticeSession(db.Model):
+    """회사 공고별 모의 면접 연습 세션 테이블"""
+    __tablename__ = "interview_practice_sessions"
+
+    id            = db.Column(db.Integer, primary_key=True)
+    user_id       = db.Column(db.Integer, db.ForeignKey("user_profiles.id"), nullable=False)
+    job_posting_id = db.Column(db.Integer, db.ForeignKey("job_postings.id"), nullable=True)
+    
+    job_title     = db.Column(db.String(300), nullable=False)
+    company       = db.Column(db.String(200), default="익명 회사")
+    
+    questions     = db.Column(db.Text, default="[]")  # JSON list: ["질문1", "질문2", ...]
+    answers       = db.Column(db.Text, default="[]")  # JSON list: ["답변1", "답변2", ...]
+    feedbacks     = db.Column(db.Text, default="[]")  # JSON list: [{"score":80, "analysis":"...", "model_answer":"..."}, ...]
+    
+    current_index = db.Column(db.Integer, default=0)
+    is_completed  = db.Column(db.Boolean, default=False)
+    interview_mode = db.Column(db.String(50), default="diagnostic")  # "stress", "diagnostic", "friendly"
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at    = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "job_posting_id": self.job_posting_id,
+            "job_title": self.job_title,
+            "company": self.company,
+            "interview_mode": self.interview_mode,
+            "questions": json.loads(self.questions or "[]"),
+            "answers": json.loads(self.answers or "[]"),
+            "feedbacks": json.loads(self.feedbacks or "[]"),
+            "current_index": self.current_index,
+            "is_completed": self.is_completed,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+# ═══════════════════════════════════════════════════════════
+# 🧠 집단지성 학습 시스템 — 사용자 답변 풀 + 최적 답변 캐시
+# ═══════════════════════════════════════════════════════════
+
+class CommunityAnswer(db.Model):
+    """
+    질문별 사용자 답변 풀 테이블
+    - 면접 답변 제출 시 익명으로 누적
+    - 일정 수(MIN_ANSWERS_FOR_SYNTHESIS) 이상 쌓이면 최적 답변 합성 트리거
+    """
+    __tablename__ = "community_answers"
+
+    id           = db.Column(db.Integer, primary_key=True)
+    question_key = db.Column(db.String(500), nullable=False, index=True)
+    # question_key 형식: "{job_title}||{question_text}" (공고별 질문 구분)
+    question     = db.Column(db.Text, nullable=False)
+    answer       = db.Column(db.Text, nullable=False)
+    score        = db.Column(db.Integer, default=0)       # AI 채점 점수 (0~100)
+    interview_mode = db.Column(db.String(50), default="diagnostic")
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id":           self.id,
+            "question_key": self.question_key,
+            "question":     self.question,
+            "answer":       self.answer,
+            "score":        self.score,
+            "created_at":   self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class OptimalAnswer(db.Model):
+    """
+    질문별 AI 합성 최적 답변 캐시 테이블
+    - CommunityAnswer 풀 + AI 모범답안을 비교 분석 후 합성
+    - 새 답변이 일정 수 이상 쌓이면 자동 갱신
+    """
+    __tablename__ = "optimal_answers"
+
+    id              = db.Column(db.Integer, primary_key=True)
+    question_key    = db.Column(db.String(500), unique=True, nullable=False, index=True)
+    question        = db.Column(db.Text, nullable=False)
+
+    # AI 단독 모범답안 (call_llm 결과)
+    ai_model_answer = db.Column(db.Text, nullable=False)
+
+    # 사용자 풀 기반 합성 답변
+    community_synthesized = db.Column(db.Text, nullable=False)
+
+    # 최종 최적 답변 (AI 모범 + 커뮤니티 비교 후 종합)
+    optimal_answer  = db.Column(db.Text, nullable=False)
+
+    # 분석 메타데이터
+    analysis        = db.Column(db.Text, default="")   # 두 답변 비교 분석 텍스트
+    strengths_from_community = db.Column(db.Text, default="")  # 커뮤니티에서 발견된 강점
+    weaknesses_from_ai = db.Column(db.Text, default="")        # AI 모범답안 대비 부족점
+
+    sample_count    = db.Column(db.Integer, default=0)  # 합성에 사용된 답변 수
+    avg_score       = db.Column(db.Float, default=0.0)  # 사용된 답변들 평균 점수
+    updated_at      = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id":                    self.id,
+            "question_key":          self.question_key,
+            "question":              self.question,
+            "ai_model_answer":       self.ai_model_answer,
+            "community_synthesized": self.community_synthesized,
+            "optimal_answer":        self.optimal_answer,
+            "analysis":              self.analysis,
+            "strengths_from_community": self.strengths_from_community,
+            "weaknesses_from_ai":    self.weaknesses_from_ai,
+            "sample_count":          self.sample_count,
+            "avg_score":             self.avg_score,
+            "updated_at":            self.updated_at.isoformat() if self.updated_at else None,
         }
